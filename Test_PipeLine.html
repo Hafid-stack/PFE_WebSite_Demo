@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Regression Testing Pipeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive guide with a visual, clickable pipeline diagram at the top. This diagram acts as the primary navigation. Clicking a stage in the diagram dynamically loads that stage's detailed content (key activities, tools) into the main view below. This structure was chosen to transform the linear document into an engaging, non-linear exploratory experience. It allows users to intuitively grasp the process flow and dive into specific stages relevant to their role (e.g., manager vs. developer), making the information more digestible and accessible than a simple scrollable page. -->
+    <!-- Visualization & Content Choices: 
+        - Pipeline Diagram: Report Info -> 5 pipeline stages. Goal -> Organize/Change. Viz -> Horizontal flowchart using HTML/CSS Flexbox. Interaction -> Click nodes to filter content. Justification -> Visually reinforces the process flow and serves as intuitive navigation. Method -> HTML/CSS.
+        - Stage Details: Report Info -> Bullet points for each stage. Goal -> Inform. Viz -> Content cards with icons (Unicode). Interaction -> Dynamically shown/hidden based on pipeline selection. Justification -> Keeps UI clean and focused. Method -> HTML/JS.
+        - Tool Explorer: Report Info -> Lists of tools. Goal -> Inform/Compare. Viz -> Filterable cards. Interaction -> Category buttons filter tool cards. Justification -> Makes a dense list of tools easy to parse. Method -> HTML/JS.
+        - CI/CD Example: Report Info -> YAML code block. Goal -> Inform. Viz -> Styled code block. Interaction -> Copy-to-clipboard button. Justification -> Provides an actionable takeaway. Method -> HTML/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .pipeline-node {
+            transition: all 0.3s ease-in-out;
+            border-width: 2px;
+        }
+        .pipeline-node.active {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .pipeline-connector {
+            flex-grow: 1;
+            height: 2px;
+            background-color: #cbd5e1;
+            position: relative;
+        }
+        .pipeline-connector::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -6px;
+            border: 8px solid transparent;
+            border-left-color: #cbd5e1;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tool-card {
+            transition: all 0.3s ease;
+        }
+        .tool-filter-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800">Automated Regression Testing</h1>
+            <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">An interactive guide to building a robust regression testing pipeline, from strategy to maintenance.</p>
+        </header>
+
+        <main>
+            <section id="pipeline-visualizer" class="mb-12">
+                <h2 class="text-2xl font-bold text-center mb-8 text-slate-700">Explore the Pipeline</h2>
+                <div class="flex items-center justify-center flex-wrap gap-4">
+                    <div data-target="overview" class="pipeline-node active cursor-pointer p-4 bg-white rounded-lg shadow-md border-2 border-transparent w-full sm:w-48 text-center">
+                        <span class="text-5xl">🚀</span>
+                        <h3 class="font-semibold mt-2 text-slate-800">Overview</h3>
+                    </div>
+                    <div class="pipeline-connector hidden sm:flex"></div>
+                    <div data-target="planning" class="pipeline-node cursor-pointer p-4 bg-white rounded-lg shadow-md border-2 border-transparent w-full sm:w-48 text-center">
+                        <span class="text-5xl">🗺️</span>
+                        <h3 class="font-semibold mt-2 text-slate-800">1. Planning</h3>
+                    </div>
+                    <div class="pipeline-connector hidden sm:flex"></div>
+                    <div data-target="development" class="pipeline-node cursor-pointer p-4 bg-white rounded-lg shadow-md border-2 border-transparent w-full sm:w-48 text-center">
+                        <span class="text-5xl">💻</span>
+                        <h3 class="font-semibold mt-2 text-slate-800">2. Development</h3>
+                    </div>
+                    <div class="pipeline-connector hidden sm:flex"></div>
+                    <div data-target="execution" class="pipeline-node cursor-pointer p-4 bg-white rounded-lg shadow-md border-2 border-transparent w-full sm:w-48 text-center">
+                        <span class="text-5xl">⚙️</span>
+                        <h3 class="font-semibold mt-2 text-slate-800">3. Execution</h3>
+                    </div>
+                     <div class="pipeline-connector hidden sm:flex"></div>
+                    <div data-target="reporting" class="pipeline-node cursor-pointer p-4 bg-white rounded-lg shadow-md border-2 border-transparent w-full sm:w-48 text-center">
+                        <span class="text-5xl">📊</span>
+                        <h3 class="font-semibold mt-2 text-slate-800">4. Reporting</h3>
+                    </div>
+                     <div class="pipeline-connector hidden sm:flex"></div>
+                    <div data-target="maintenance" class="pipeline-node cursor-pointer p-4 bg-white rounded-lg shadow-md border-2 border-transparent w-full sm:w-48 text-center">
+                        <span class="text-5xl">🛠️</span>
+                        <h3 class="font-semibold mt-2 text-slate-800">5. Maintenance</h3>
+                    </div>
+                </div>
+            </section>
+
+            <section id="content-display" class="bg-white p-6 md:p-8 rounded-xl shadow-lg min-h-[400px]">
+                <!-- Overview Content -->
+                <div id="overview-content" class="content-section active">
+                    <h2 class="text-3xl font-bold mb-4 text-blue-600">Welcome to the Interactive Pipeline</h2>
+                    <p class="text-slate-600 mb-6">This application brings the process of creating an automated regression testing pipeline to life. Automating regression tests is vital for ensuring software quality and stability as your application evolves. It prevents new features from breaking existing functionality, giving your team the confidence to deploy changes quickly and reliably.</p>
+                    <p class="text-slate-600 mb-6">Use the visual pipeline above to navigate through each critical stage. Click on any stage—from "Planning" to "Maintenance"—to explore its key activities, best practices, and recommended tools. This guide is designed to provide a clear, step-by-step framework for building a successful automation strategy.</p>
+                    <div class="grid md:grid-cols-2 gap-6 mt-8">
+                        <div class="bg-blue-50 p-6 rounded-lg">
+                            <h3 class="font-bold text-xl mb-2 text-blue-800">Why Automate?</h3>
+                            <ul class="list-disc list-inside space-y-2 text-slate-700">
+                                <li>Increase test coverage and accuracy.</li>
+                                <li>Get faster feedback on code changes.</li>
+                                <li>Reduce manual testing effort and costs.</li>
+                                <li>Enable continuous integration and delivery (CI/CD).</li>
+                            </ul>
+                        </div>
+                        <div class="bg-green-50 p-6 rounded-lg">
+                            <h3 class="font-bold text-xl mb-2 text-green-800">How to Use This Guide</h3>
+                            <ul class="list-disc list-inside space-y-2 text-slate-700">
+                                <li>Click a stage in the diagram to begin.</li>
+                                <li>Explore the detailed cards for each activity.</li>
+                                <li>Discover recommended tools in the "Tool Explorer".</li>
+                                <li>Review the CI/CD example for implementation ideas.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Planning Content -->
+                <div id="planning-content" class="content-section">
+                    <h2 class="text-3xl font-bold mb-2 text-blue-600">Stage 1: Planning and Strategy</h2>
+                    <p class="text-slate-600 mb-6">A solid plan is the foundation of a successful automation strategy. This phase involves defining the scope, selecting the right tools, and setting up the necessary environments to ensure your testing efforts are effective and aligned with business goals.</p>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🎯 Identify Critical Areas</h3><p class="text-slate-600">Prioritize functionalities based on business impact, usage frequency, and defect-prone areas.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🧪 Test Case Selection</h3><p class="text-slate-600">Focus on high-risk areas, core functionality, integration points, and performance baselines.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🏠 Environment Setup</h3><p class="text-slate-600">Prepare dedicated test environments (dev, staging) that mirror production as closely as possible.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🔧 Tool Selection</h3><p class="text-slate-600">Choose automation frameworks, CI/CD tools, and reporting solutions that fit your tech stack and team.</p></div>
+                    </div>
+                </div>
+
+                <!-- Development Content -->
+                <div id="development-content" class="content-section">
+                    <h2 class="text-3xl font-bold mb-2 text-blue-600">Stage 2: Test Case Development</h2>
+                    <p class="text-slate-600 mb-6">This phase focuses on writing clean, maintainable, and effective automated tests. Good development practices here will save significant time and effort in the long run, making your test suite robust and easy to manage.</p>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🧱 Modular Design</h3><p class="text-slate-600">Create reusable test components (e.g., Page Object Model) to reduce code duplication.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🗃️ Data-Driven Testing</h3><p class="text-slate-600">Separate test data from test logic to easily increase test coverage with different inputs.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">✔️ Clear Assertions</h3><p class="text-slate-600">Ensure each test has specific, unambiguous checks to verify the expected outcomes.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🔄 Error Handling & Retries</h3><p class="text-slate-600">Implement mechanisms to handle transient failures, like network delays or slow-loading elements.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🏷️ Naming Conventions</h3><p class="text-slate-600">Use consistent naming for files, functions, and variables for better readability.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">📂 Version Control</h3><p class="text-slate-600">Store test scripts in a version control system (like Git) alongside your application code.</p></div>
+                    </div>
+                </div>
+                
+                <!-- Execution Content -->
+                <div id="execution-content" class="content-section">
+                    <h2 class="text-3xl font-bold mb-2 text-blue-600">Stage 3: Test Execution</h2>
+                    <p class="text-slate-600 mb-6">This is where your automated tests are put to work. The key is to integrate test runs seamlessly into your development workflow, providing fast and reliable feedback to the team.</p>
+                     <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">⏱️ Triggering Mechanisms</h3><p class="text-slate-600">Run tests on a schedule (nightly), on-demand, or automatically with every code push via CI/CD integration.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">⚡ Parallel Execution</h3><p class="text-slate-600">Run tests simultaneously across multiple machines or browsers to drastically reduce total execution time.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🙈 Headless Execution</h3><p class="text-slate-600">For UI tests, run them without a visible browser interface on servers to save resources and speed up runs.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🌱 Environment Provisioning</h3><p class="text-slate-600">Automate the setup and teardown of test environments to ensure clean, consistent runs every time.</p></div>
+                    </div>
+                </div>
+                
+                <!-- Reporting Content -->
+                <div id="reporting-content" class="content-section">
+                    <h2 class="text-3xl font-bold mb-2 text-blue-600">Stage 4: Reporting and Analysis</h2>
+                    <p class="text-slate-600 mb-6">Test results are only useful if they are easy to understand and act upon. This stage focuses on generating clear reports and establishing a process for analyzing failures to distinguish real bugs from test flakiness.</p>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">📋 Comprehensive Reports</h3><p class="text-slate-600">Generate reports with pass/fail status, execution time, error messages, and screenshots/videos for failures.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">📈 Dashboard Integration</h3><p class="text-slate-600">Push results to centralized dashboards (like TestRail or Jira) for better visibility and trend tracking.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🔍 Failure Triage</h3><p class="text-slate-600">Establish a clear process to analyze failures: is it a real bug, a flaky test, or an environment issue?</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🔔 Alerting</h3><p class="text-slate-600">Set up automatic notifications (via Slack, email) for critical test failures to ensure prompt attention.</p></div>
+                    </div>
+                </div>
+
+                <!-- Maintenance Content -->
+                <div id="maintenance-content" class="content-section">
+                    <h2 class="text-3xl font-bold mb-2 text-blue-600">Stage 5: Maintenance and Optimization</h2>
+                    <p class="text-slate-600 mb-6">An automated test suite is a living project that requires ongoing care. Regular maintenance ensures the tests remain reliable, relevant, and efficient as the application evolves.</p>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🔄 Regular Review</h3><p class="text-slate-600">Periodically review and update test cases to reflect changes in the application's functionality or UI.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🧹 Refactoring</h3><p class="text-slate-600">Refactor test code to improve readability, maintainability, and efficiency, just like application code.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">❓ Flaky Test Management</h3><p class="text-slate-600">Actively investigate and fix flaky tests, as they erode the team's trust in the automation suite.</p></div>
+                        <div class="bg-slate-50 p-6 rounded-lg"><h3 class="font-semibold text-lg mb-2">🗣️ Feedback Loop</h3><p class="text-slate-600">Establish a continuous feedback loop between developers, testers, and product owners to improve the process.</p></div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="tool-explorer" class="mt-12">
+                <h2 class="text-2xl font-bold text-center mb-4 text-slate-700">Tool Explorer</h2>
+                <p class="text-center text-slate-600 mb-8 max-w-2xl mx-auto">Discover a selection of popular tools for each part of the automation pipeline. Use the filters to explore different categories.</p>
+                <div class="flex justify-center gap-2 mb-8 flex-wrap">
+                    <button class="tool-filter-btn active px-4 py-2 bg-white text-slate-700 rounded-full font-semibold shadow-sm" data-filter="all">All</button>
+                    <button class="tool-filter-btn px-4 py-2 bg-white text-slate-700 rounded-full font-semibold shadow-sm" data-filter="framework">Frameworks</button>
+                    <button class="tool-filter-btn px-4 py-2 bg-white text-slate-700 rounded-full font-semibold shadow-sm" data-filter="cicd">CI/CD</button>
+                    <button class="tool-filter-btn px-4 py-2 bg-white text-slate-700 rounded-full font-semibold shadow-sm" data-filter="management">Management</button>
+                    <button class="tool-filter-btn px-4 py-2 bg-white text-slate-700 rounded-full font-semibold shadow-sm" data-filter="reporting">Reporting</button>
+                </div>
+                <div id="tool-grid" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="framework"><h3 class="font-bold text-lg">Selenium</h3><p class="text-slate-600 mt-2">A powerful browser automation framework for web apps.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="framework"><h3 class="font-bold text-lg">Playwright</h3><p class="text-slate-600 mt-2">A modern framework for reliable end-to-end testing.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="framework"><h3 class="font-bold text-lg">Cypress</h3><p class="text-slate-600 mt-2">A fast, easy, and reliable testing tool for anything that runs in a browser.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="framework"><h3 class="font-bold text-lg">Postman</h3><p class="text-slate-600 mt-2">The go-to platform for building and testing APIs.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="cicd"><h3 class="font-bold text-lg">Jenkins</h3><p class="text-slate-600 mt-2">An open-source automation server for building, testing, and deploying.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="cicd"><h3 class="font-bold text-lg">GitHub Actions</h3><p class="text-slate-600 mt-2">Automate workflows directly within your GitHub repository.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="cicd"><h3 class="font-bold text-lg">GitLab CI/CD</h3><p class="text-slate-600 mt-2">Integrated CI/CD pipelines within the GitLab platform.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="management"><h3 class="font-bold text-lg">Jira</h3><p class="text-slate-600 mt-2">Project management tool with test management plugins like Zephyr.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="management"><h3 class="font-bold text-lg">TestRail</h3><p class="text-slate-600 mt-2">Comprehensive test case management software.</p></div>
+                    <div class="tool-card bg-white p-6 rounded-lg shadow-md" data-category="reporting"><h3 class="font-bold text-lg">Allure Report</h3><p class="text-slate-600 mt-2">A flexible, lightweight multi-language test report tool.</p></div>
+                </div>
+            </section>
+            
+            <section id="cicd-example" class="mt-12">
+                <h2 class="text-2xl font-bold text-center mb-4 text-slate-700">CI/CD Integration Example</h2>
+                <p class="text-center text-slate-600 mb-8 max-w-2xl mx-auto">Here’s a conceptual example of a GitHub Actions workflow that runs regression tests automatically on every code push.</p>
+                <div class="bg-slate-800 rounded-lg shadow-2xl overflow-hidden">
+                    <div class="p-4 flex justify-between items-center bg-slate-900 text-sm text-slate-300">
+                        <span>.github/workflows/regression.yml</span>
+                        <button id="copy-btn" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded text-white font-semibold">Copy</button>
+                    </div>
+                    <pre class="p-6 text-white text-sm overflow-x-auto"><code id="code-block">name: Regression Test Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Automated Regression Tests
+        run: npx playwright test
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL }}
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+</code></pre>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-16 py-6 border-t border-slate-200">
+            <p class="text-slate-500">Interactive guide created to demonstrate a modern regression testing pipeline.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pipelineNodes = document.querySelectorAll('.pipeline-node');
+            const contentSections = document.querySelectorAll('.content-section');
+            const toolFilterBtns = document.querySelectorAll('.tool-filter-btn');
+            const toolCards = document.querySelectorAll('.tool-card');
+            const copyBtn = document.getElementById('copy-btn');
+            const codeBlock = document.getElementById('code-block');
+
+            function switchTab(targetId) {
+                pipelineNodes.forEach(node => {
+                    node.classList.toggle('active', node.dataset.target === targetId);
+                });
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', section.id === `${targetId}-content`);
+                });
+            }
+
+            pipelineNodes.forEach(node => {
+                node.addEventListener('click', () => {
+                    switchTab(node.dataset.target);
+                });
+            });
+
+            toolFilterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const filter = btn.dataset.filter;
+
+                    toolFilterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    toolCards.forEach(card => {
+                        if (filter === 'all' || card.dataset.category === filter) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            copyBtn.addEventListener('click', () => {
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = codeBlock.innerText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    copyBtn.innerText = 'Copied!';
+                    setTimeout(() => { copyBtn.innerText = 'Copy'; }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    copyBtn.innerText = 'Error';
+                }
+                document.body.removeChild(tempTextArea);
+            });
+            
+            switchTab('overview');
+        });
+    </script>
+</body>
+</html>
